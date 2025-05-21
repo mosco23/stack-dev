@@ -79,7 +79,7 @@ docker compose version
 
 Définit l’environnement de l’application Django.
 
-```bash
+```dockerfile
 
 FROM python:3.13-slim as builder
 
@@ -105,7 +105,7 @@ CMD ["python3", "manage.py", "runserver", "0.0.0.0:80"]
 
 Orchestration Docker complète : Django, Postgres, Redis, PGAdmin.
 
-```bash
+```yml
 
 services:
   suptrack:
