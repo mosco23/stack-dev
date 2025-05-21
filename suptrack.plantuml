@@ -16,6 +16,26 @@ package Docker.Monitoring{
     rectangle Grafana[
         <img:img/grafana.png>
     ]
+
+    rectangle Alertmanager #text:Blue[
+        <img:img/prom.png>
+        Alertmanager 
+    ]
+
+    rectangle Nodeexporter #text:Red[
+        <img:img/prom.png>
+        Nodeexporter
+    ]
+
+    rectangle Cadvisor #text:Blue[
+        <img:img/prom.png>
+        Cadvisor 
+    ]
+
+    rectangle Pushgateway #text:DarkViolet[
+        <img:img/prom.png>
+        Pushgateway 
+    ]
 }
 
 package Docker.Suptrack{
@@ -34,12 +54,20 @@ package Docker.Suptrack{
         <img:img/redis.png>
     ]
 
-    Grafana <--> Traefik: grafana.monotoring.com:80
-    Prometheus <--> Traefik: prometheus.monotoring.com:80
-    App <--> Traefik : app.com:80
+    Traefik <--> App : app.com:80
     Mysql <--> App
     App <--> Redis
 
+    Grafana <--> Traefik: grafana.monotoring.com:80
+    Prometheus <--> Traefik: prometheus.monotoring.com:80
+    Alertmanager <--> Traefik: alertmanager.monotoring.com:80
+    Cadvisor <--> Traefik: cadvisor.monotoring.com:80
+    Pushgateway <--> Traefik: pushgateway.monotoring.com:80
+    Prometheus <--> Nodeexporter
+    Prometheus <--> Alertmanager
+    Prometheus <--> Cadvisor
+    Prometheus <--> Grafana
+    Prometheus <--> Pushgateway
 }
 
 @enduml
