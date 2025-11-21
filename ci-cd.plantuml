@@ -1,0 +1,48 @@
+@startuml CICD_Pipeline
+title Suptrack CI/CD Pipeline : Déploiement Automatisé
+
+skinparam shadowing false
+skinparam backgroundColor #F9F9F9
+skinparam node {
+    BackgroundColor #FFFFFF
+    BorderColor #4A90E2
+    FontColor #333333
+}
+skinparam frame {
+    BackgroundColor #F4F4F4
+    BorderColor #AAAAAA
+    FontColor #333333
+}
+skinparam arrow {
+    Color #4A90E2
+    Thickness 2
+}
+
+package "Développeur" {
+    rectangle "<img:img/developer.jpeg>\nDéveloppeur" as dev
+}
+
+package "GitHub Actions" {
+    rectangle "<img:img/github.png>\nGitHub Repository" as repo
+    rectangle "<img:img/github-actions.png>" as actions
+}
+
+package "Build & Push Images" {
+    rectangle "<img:img/docker.png>" as docker_build
+    rectangle "<img:img/ghcr.png>" as ghcr
+}
+
+package "Déploiement sur VPS" {
+    rectangle "<img:img/server.jpeg>\nVPS" as vps
+    rectangle "<img:img/docker-compose.png>" as compose
+}
+
+dev --> repo : Git push (code ou tag)
+repo --> actions : Déclenchement du workflow CI/CD
+actions --> docker_build : Construction des images Docker
+docker_build --> ghcr : Push des images vers GHCR
+actions --> vps : Connexion SSH au VPS
+vps --> compose : Pull des images depuis GHCR
+compose --> compose : Démarrage des services avec Docker Compose
+
+@enduml

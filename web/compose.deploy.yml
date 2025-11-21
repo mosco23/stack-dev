@@ -1,0 +1,86 @@
+services:
+  webapp:
+    image: ghcr.io/username/project_name/webapp:${TAG}
+    entrypoint: [ "sh", "entrypoint.deploy.sh" ]
+    container_name: webapp-container
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./media:/app/media
+      - ./backup:/app/backup
+    expose:
+      - 80
+    networks:
+      - traefik_network
+      - web_network
+      - redis_network
+    depends_on:
+      webapp_db:
+        condition: service_healthy
+        restart: true
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+
+      # Service principal pour tous les routers
+      - "traefik.http.services.webapp.loadbalancer.server.port=80"
+
+      # Configuration Webmaster
+      - "traefik.http.routers.webapp.rule=Host(`${WEB_APP_HOST}`)"
+      - "traefik.http.routers.webapp.entrypoints=websecure"
+      - "traefik.http.routers.webapp.tls.certresolver=myresolver"
+      - "traefik.http.routers.webapp.service=web"
+
+  webapp_db:
+    image: postgres:alpine
+    restart: always
+    container_name: webapp_db-container
+    env_file: .env
+    expose:
+      - 5432
+    networks:
+      - web_network
+      - db_network
+    volumes:
+      - ./database/data:/var/lib/postgresql
+    #user: "1001:1001"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+
+
+  celery:
+    image: ghcr.io/username/project_name/webapp:${TAG}
+    working_dir: /app
+    command: >
+      sh -c "celery -A project_name worker --loglevel=info -E -c 2 &
+            celery -A project_name beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+            wait"
+    container_name: celery-container
+    restart: always
+    depends_on:
+      webapp:
+        condition: service_started
+    volumes:
+      - ./media:/app/media
+    networks:
+      - web_network
+      - redis_network
+    env_file: .env
+
+networks:
+  web_network:
+    name: web_network
+  traefik_network:
+    name: traefik_network
+    external: true
+  db_network:
+    name: db_network
+    external: true
+  redis_network:
+    name: redis_network
+    external: true

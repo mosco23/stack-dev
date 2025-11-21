@@ -1,0 +1,86 @@
+@startuml FullStackDevOps
+title Stack DevOps et CI/CD Pipeline : Déploiement Automatisé d’un Projet Django avec Docker
+
+skinparam shadowing false
+skinparam backgroundColor #F9F9F9
+skinparam node {
+    BackgroundColor #FFFFFF
+    BorderColor #4A90E2
+    FontColor #333333
+}
+skinparam frame {
+    BackgroundColor #F4F4F4
+    BorderColor #AAAAAA
+    FontColor #333333
+}
+skinparam arrow {
+    Color #4A90E2
+    Thickness 2
+}
+
+package "CI/CD Pipeline" {
+    rectangle "<img:img/developer.jpeg>\nDéveloppeur" as dev
+    rectangle "<img:img/github.png>\nGitHub Repository" as repo
+    rectangle "<img:img/github-actions.png>\nGitHub Actions Workflow" as actions
+    rectangle "<img:img/docker.png>\nDocker Build" as docker_build
+    rectangle "<img:img/ghcr.png>\nGitHub Container Registry (GHCR)" as ghcr
+    rectangle "<img:img/server.jpeg>\nVPS" as vps_ci
+    rectangle "<img:img/docker-compose.png>\nDocker Compose" as compose_ci
+
+    dev --> repo : Git push (code ou tag)
+    repo --> actions : Déclenchement du workflow CI/CD
+    actions --> docker_build : Construction des images Docker
+    docker_build --> ghcr : Push des images vers GHCR
+    actions --> vps_ci : Connexion SSH au VPS
+    vps_ci --> compose_ci : Pull des images depuis GHCR
+    compose_ci --> compose_ci : Démarrage des services avec Docker Compose
+}
+
+node "VPS (Stack DevOps)" {
+    frame "Traefik (Reverse Proxy)" {
+        rectangle "<img:img/traefik.jpeg>\nTraefik" as Traefik
+        rectangle "<img:img/ssl.jpeg>\nCertificats SSL (Let's Encrypt)" as SSL
+    }
+
+    frame "Application Django" {
+        rectangle "<img:img/django.png>\nDjango (web)" as Django
+        rectangle "<img:img/postgresql.png>\nPostgreSQL (db)" as PostgreSQL
+        rectangle "<img:img/redis.png>\nRedis (cache)" as Redis
+    }
+
+    frame "Services Complémentaires" {
+        rectangle "<img:img/pgadmin.jpeg>\npgAdmin" as pgAdmin
+    }
+
+    frame "Monitoring" {
+        rectangle "<img:img/prometheus.png>\nPrometheus" as Prometheus
+        rectangle "<img:img/grafana.png>\nGrafana" as Grafana
+        rectangle "<img:img/alertmanager.png>\nAlertmanager" as Alertmanager
+        rectangle "<img:img/nodeexporter.png>\nNodeExporter" as NodeExporter
+        rectangle "<img:img/cadvisor.jpeg>\nCadvisor" as Cadvisor
+        rectangle "<img:img/pushgateway.png>\nPushgateway" as Pushgateway
+    }
+}
+
+frame "Réseaux Docker" {
+    Traefik --> Django : Routage dynamique
+    Traefik --> pgAdmin : Routage dynamique
+    Django --> PostgreSQL : Connexion à la base de données
+    Django --> Redis : Cache et tâches asynchrones
+    pgAdmin --> PostgreSQL : Gestion de la base de données
+
+    Prometheus --> NodeExporter : Monitoring des ressources
+    Prometheus --> Cadvisor : Monitoring des conteneurs
+    Prometheus --> Pushgateway : Collecte des métriques
+    Prometheus --> Alertmanager : Gestion des alertes
+    Prometheus --> Grafana : Visualisation des métriques
+
+    Django --> Prometheus : Export des métriques
+    Redis --> Prometheus : Export des métriques
+    PostgreSQL --> Prometheus : Export des métriques
+    pgAdmin --> Prometheus : Export des métriques
+}
+
+vps_ci --> "VPS (Stack DevOps)" : Déploiement des services
+
+@enduml

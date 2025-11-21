@@ -1,0 +1,50 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik-container
+    restart: always
+    networks:
+      - traefik_network
+    command:
+      - "--api.insecure=true"  # Activer l'API Traefik (optionnel)
+      - "--log.level=DEBUG"
+      - "--log.filePath=/logs/traefik.log" 
+      - "--accesslog=true"
+      - "--accesslog.filePath=/logs/access.log"
+      - "--providers.docker=true"  # Activer l'intégration Docker
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik_network"
+      - "--providers.docker.httpClientTimeout=200"
+      - "--entrypoints.web.address=:80"  # Point d'entrée pour HTTP
+      - "--entrypoints.websecure.address=:443"  # Point d'entrée pour HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure" 
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https" 
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true" 
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${CERT_EMAIL}"  # Ton email
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Chemin de stockage
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"  # Pour accéder aux conteneurs Docker
+      - "./letsencrypt:/letsencrypt" 
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./logs/:/logs/
+      - ./.htpasswd:/.htpasswd
+
+    labels:
+      # Labels pour le service Traefik lui-même
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.usersfile=/.htpasswd"
+
+networks:
+  traefik_network:
+    name: traefik_network
+    external: true
